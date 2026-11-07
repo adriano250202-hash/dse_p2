@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Area 51 // Sentinel Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand">
+      <i class="fa-solid fa-shield-halved"></i> AREA 51 // SENTINEL
+    </div>
+    
+    <div class="mode-selector">
+      <span id="mode-label" style="font-size: 0.85rem;">MODO: <strong style="color: #00ff66;">REAL (ESP32)</strong></span>
+      <button id="btn-toggle-mode" class="btn-mode mode-real">
+        <i class="fa-solid fa-toggle-on"></i> ALTERAR PARA APRESENTAÇÃO
+      </button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="tab-monitor">
+      <i class="fa-solid fa-desktop"></i> Monitoramento
+    </button>
+    <button class="tab-btn" data-tab="tab-analytics">
+      <i class="fa-solid fa-chart-line"></i> Análise de Dados & Relatórios
+    </button>
+  </nav>
+
+  <main>
+    <!-- ABA 1: MONITORAMENTO PRINCIPAL -->
+    <section id="tab-monitor" class="tab-content active">
+      <div class="dashboard-vertical">
+        <div id="alert-banner" class="alert-banner banner-safe">
+          <span id="alert-banner-text">MONITORANDO // SEM AMEAÇAS</span>
+        </div>
+
+        <div class="card">
+          <h2><i class="fa-solid fa-radar"></i> TELEMETRIA E RADAR DE PERÍMETRO</h2>
+          <div class="radar-box">
+            <div class="radar-sweep"></div>
+            <i class="fa-solid fa-house-shield radar-house-icon"></i>
+            <div id="radar-blip" class="radar-blip"></div>
+          </div>
+          <div class="telemetry-readout">
+            <div class="readout-box full-width">
+              <span class="label">ESTADO DO PERÍMETRO</span>
+              <span id="display-status" class="value state-safe">PERÍMETRO SEGURO</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2><i class="fa-solid fa-sliders"></i> PAINEL DE CONTROLE DE ATUADORES</h2>
+          <div class="action-buttons">
+            <button id="btn-arm" class="btn"><i class="fa-solid fa-lock"></i> ARMAR</button>
+            <button id="btn-disarm" class="btn"><i class="fa-solid fa-lock-open"></i> DESARMAR</button>
+            <button id="btn-simulate" class="btn btn-sim"><i class="fa-solid fa-flask"></i> SIMULAR</button>
+          </div>
+          <div class="sensitivity-box">
+            <div class="sensitivity-header">
+              <span>Sensibilidade do Perímetro:</span>
+              <span id="sensitivity-val" style="color: #00ff66; font-weight: bold;">35 cm</span>
+            </div>
+            <input type="range" id="range-sensitivity" min="5" max="50" value="35">
+          </div>
+        </div>
+
+        <div class="card history-section">
+          <div class="history-header">
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> HISTÓRICO DE INVASÕES</h2>
+            <button id="btn-clear-history" class="btn-clear"><i class="fa-solid fa-trash"></i> LIMPAR HISTÓRICO</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>HORÁRIO</th>
+                  <th>OCORRÊNCIA</th>
+                  <th>ESTADO DO ALARME</th>
+                  <th>AÇÃO DO SISTEMA</th>
+                  <th>REMOVER</th>
+                </tr>
+              </thead>
+              <tbody id="history-logs">
+                <tr><td colspan="5" style="text-align: center; color: #888;">Carregando dados...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 2: ANÁLISE DE DADOS EXPANDIDA (RELATÓRIOS + GRÁFICOS MULTIDIMENSÃO) -->
+    <section id="tab-analytics" class="tab-content">
+      <div class="dashboard-vertical">
+
+        <!-- CARDS DE KPIS/MÉTRICAS RÁPIDAS -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-title">Média de Distância</span>
+            <span id="kpi-avg-dist" class="kpi-value">-- cm</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">Menor Distância</span>
+            <span id="kpi-min-dist" class="kpi-value">-- cm</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">Disparos (Último Minuto)</span>
+            <span id="kpi-minute-alerts" class="kpi-value" style="color: #ff003c;">0</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">Próximo Relatório</span>
+            <span id="kpi-timer" class="kpi-value">60s</span>
+          </div>
+        </div>
+
+        <!-- RELATÓRIO EXECUTIVO GERADO A CADA 60 SEGUNDOS -->
+        <div class="card report-card">
+          <h2><i class="fa-solid fa-file-contract"></i> RELATÓRIO EXECUTIVO DE TELEMETRIA (1 MINUTO)</h2>
+          <div id="report-output" class="report-box">
+            Aguardando ciclo de 60 segundos para emissão do primeiro relatório analítico...
+          </div>
+        </div>
+
+        <!-- GRADE DE GRÁFICOS -->
+        <div class="analytics-grid">
+          <!-- GRÁFICO 1: TELEMETRIA VS LIMITE DE SEGURANÇA -->
+          <div class="card chart-card">
+            <h2><i class="fa-solid fa-wave-square"></i> TELEMETRIA E THRESHOLD EM TEMPO REAL</h2>
+            <div class="chart-wrapper" style="position: relative; height: 260px;">
+              <canvas id="distanceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- GRÁFICO 2: PROPORÇÃO DE SEGURANÇA VS INVASÃO -->
+          <div class="card chart-card">
+            <h2><i class="fa-solid fa-chart-pie"></i> DISTRIBUIÇÃO DE ESTADOS DA SESSÃO</h2>
+            <div class="chart-wrapper" style="position: relative; height: 260px;">
+              <canvas id="stateRatioChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
