@@ -1,7 +1,12 @@
 import { db } from "./firebase-config.js";
 import { ref, onValue, update, set, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-console.log("⚡ [JARVIS SYSTEM] Sentinel Monitor // Versão Final Estabilizada.");
+console.log("Sentinel Monitor // Versão Final Estabilizada (Nó: area51_dse_p2).");
+
+// -------------------------------------------------------------
+// 0. CAMINHO BASE DO PROJETO NO FIREBASE
+// -------------------------------------------------------------
+const BASE_PATH = 'area51_dse_p2/dispositivos/esp32_01';
 
 // -------------------------------------------------------------
 // 1. ELEMENTOS DOM
@@ -23,16 +28,17 @@ const kpiMinuteAlerts = document.getElementById('kpi-minute-alerts');
 const kpiTimer = document.getElementById('kpi-timer');
 const reportOutput = document.getElementById('report-output');
 
-// Referências Firebase
-const atuadoresRef = ref(db, 'dispositivos/esp32_01/atuadores');
-const sensoresRef = ref(db, 'dispositivos/esp32_01/sensores');
-const historicoRef = ref(db, 'dispositivos/esp32_01/historico');
-const configRef = ref(db, 'dispositivos/esp32_01/configuracao');
-const relatoriosRef = ref(db, 'dispositivos/esp32_01/relatorios');
+// Referências Firebase Atualizadas
+const atuadoresRef = ref(db, `${BASE_PATH}/atuadores`);
+const sensoresRef = ref(db, `${BASE_PATH}/sensores`);
+const historicoRef = ref(db, `${BASE_PATH}/historico`);
+const configRef = ref(db, `${BASE_PATH}/configuracao`);
+const relatoriosRef = ref(db, `${BASE_PATH}/relatorios`);
 
 // Variáveis de Estado
 let modoApresentacao = false;
 let limiteSensibilidadeAtual = 35;
+let sistemaArmado = false;
 let travaCliqueBotao = false;
 
 let leiturasDistancia = [];
@@ -168,6 +174,11 @@ function atualizarGraficosEMetricas(distancia) {
 // -------------------------------------------------------------
 // 4. LISTENERS EM TEMPO REAL (FIREBASE)
 // -------------------------------------------------------------
+onValue(atuadoresRef, (snapshot) => {
+  const atuadores = snapshot.val() || {};
+  sistemaArmado = atuadores.alarme_armado ?? false;
+});
+
 onValue(configRef, (snapshot) => {
   const config = snapshot.val();
   if (config && config.limite_cm !== undefined) {
@@ -182,8 +193,8 @@ onValue(sensoresRef, (snapshot) => {
   const distancia = sensores.distancia_cm !== undefined ? Number(sensores.distancia_cm) : 150;
   const presenca = sensores.presenca || false;
 
-  const violacaoDistancia = distancia > 0 && distancia <= limiteSensibilidadeAtual;
-  const emAlerta = presenca || violacaoDistancia;
+  const violacaoDistancia = sistemaArmado && (distancia > 0 && distancia <= limiteSensibilidadeAtual);
+  const emAlerta = sistemaArmado && (presenca || violacaoDistancia);
 
   atualizarVisualInterface(emAlerta);
   atualizarGraficosEMetricas(distancia);
@@ -221,7 +232,7 @@ onValue(historicoRef, (snapshot) => {
     btn.onclick = (e) => {
       e.stopPropagation();
       const key = e.currentTarget.getAttribute('data-key');
-      remove(ref(db, `dispositivos/esp32_01/historico/${key}`));
+      remove(ref(db, `${BASE_PATH}/historico/${key}`));
     };
   });
 });
@@ -245,7 +256,7 @@ function gerarERegistrarRelatorioMinutado() {
   const totalLeituras = leiturasDistancia.length || 1;
   const soma = leiturasDistancia.reduce((a, b) => a + b, 0);
   const media = Number((soma / totalLeituras).toFixed(1));
-  const menorDist = Number(Math.min(...leiturasDistancia).toFixed(1));
+  const menorDist = leiturasDistancia.length > 0 ? Number(Math.min(...leiturasDistancia).toFixed(1)) : 150;
 
   const statusTexto = disparosNoUltimoMinuto > 0 
     ? `CRÍTICO (${disparosNoUltimoMinuto} INCIDENTE(S))` 
@@ -261,7 +272,6 @@ function gerarERegistrarRelatorioMinutado() {
     status_perimetro: statusTexto
   };
 
-  // Salva no nó /relatorios
   push(relatoriosRef, novoRelatorio);
 
   if (reportOutput) {
@@ -282,13 +292,17 @@ function gerarERegistrarRelatorioMinutado() {
 // 6. FUNÇÕES E BOTÕES DA INTERFACE
 // -------------------------------------------------------------
 function atualizarVisualInterface(emAlerta) {
-  if (emAlerta) {
+  if (!sistemaArmado) {
+    if (displayStatus) { displayStatus.innerText = "SISTEMA DESARMADO // STANDBY"; displayStatus.className = "value state-warning"; }
+    if (alertBanner) { alertBanner.className = "alert-banner banner-safe"; if (alertBannerText) alertBannerText.innerText = "SISTEMA DESARMADO // VIGILÂNCIA PAUSADA"; }
+    if (radarBlip) radarBlip.style.opacity = '0';
+  } else if (emAlerta) {
     if (displayStatus) { displayStatus.innerText = "INVASÃO DETECTADA!"; displayStatus.className = "value state-alert"; }
     if (alertBanner) { alertBanner.className = "alert-banner banner-alert"; if (alertBannerText) alertBannerText.innerText = "⚠️ PERÍMETRO VIOLADO // ALERTA MÁXIMO"; }
     if (radarBlip) { radarBlip.style.opacity = '1'; radarBlip.style.top = '35%'; radarBlip.style.left = '55%'; }
   } else {
-    if (displayStatus) { displayStatus.innerText = "PERÍMETRO SEGURO"; displayStatus.className = "value state-safe"; }
-    if (alertBanner) { alertBanner.className = "alert-banner banner-safe"; if (alertBannerText) alertBannerText.innerText = "MONITORANDO // SEM AMEAÇAS"; }
+    if (displayStatus) { displayStatus.innerText = "PERÍMETRO SEGURO (ARMADO)"; displayStatus.className = "value state-safe"; }
+    if (alertBanner) { alertBanner.className = "alert-banner banner-safe"; if (alertBannerText) alertBannerText.innerText = "MONITORANDO // SISTEMA ARMADO & PERÍMETRO PROTEGIDO"; }
     if (radarBlip) radarBlip.style.opacity = '0';
   }
 }
@@ -309,9 +323,9 @@ function executarAcaoComLog(ocorrencia, evento, acao, dadosAtuadores) {
   if (evento === "DISPARADO") disparosNoUltimoMinuto++;
 
   push(historicoRef, novoLog);
-  update(ref(db, 'dispositivos/esp32_01'), dadosAtuadores);
+  update(ref(db, BASE_PATH), dadosAtuadores);
 
-  setTimeout(() => { travaCliqueBotao = false; }, 1500);
+  setTimeout(() => { travaCliqueBotao = false; }, 800);
 }
 
 btnToggleMode?.addEventListener('click', () => {
