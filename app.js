@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { ref, onValue, update, set, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-console.log("⚡ [JARVIS SYSTEM] Sentinel Monitor // Versão Final Estabilizada (Nó: area51_dse_p2).");
+console.log("Sentinel Monitor // Versão Final eu creio");
 
 // -------------------------------------------------------------
 // 0. CAMINHO BASE DO PROJETO NO FIREBASE
@@ -387,4 +387,25 @@ if (btnClearHistory) {
       remove(historicoRef);
     }
   });
+}
+
+// -------------------------------------------------------------
+// 7. GERENCIADOR DO SPLASH SCREEN HACKER
+// -------------------------------------------------------------
+function inicializarEsconderSplash() {
+  const splash = document.getElementById('hacker-splash');
+  if (!splash) return;
+
+  setTimeout(() => {
+    splash.classList.add('splash-hidden');
+    setTimeout(() => {
+      splash.remove();
+    }, 600);
+  }, 3000);
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  inicializarEsconderSplash();
+} else {
+  window.addEventListener('DOMContentLoaded', inicializarEsconderSplash);
 }
