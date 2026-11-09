@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { ref, onValue, update, set, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-console.log("Sentinel Monitor // Versão Final Estabilizada (Nó: area51_dse_p2).");
+console.log("⚡ [JARVIS SYSTEM] Sentinel Monitor // Versão Final Estabilizada (Nó: area51_dse_p2).");
 
 // -------------------------------------------------------------
 // 0. CAMINHO BASE DO PROJETO NO FIREBASE
